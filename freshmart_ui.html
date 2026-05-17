@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FreshMart — Store Management</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #2d6a4f;
+    --green-light: #52b788;
+    --green-pale: #d8f3dc;
+    --amber: #e76f51;
+    --amber-pale: #fde8e0;
+    --red: #c1121f;
+    --red-pale: #ffe5e5;
+    --gray-bg: #f5f5f3;
+    --gray-muted: #6c757d;
+    --text: #1b1b1b;
+    --border: #e0e0e0;
+    --white: #ffffff;
+    --sidebar-w: 210px;
+    --font-serif: 'DM Serif Display', serif;
+    --font-sans: 'DM Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); background: var(--gray-bg); color: var(--text); display: flex; min-height: 100vh; font-size: 15px; }
+
+  /* ── Sidebar ── */
+  .sidebar { width: var(--sidebar-w); background: var(--green); color: white; display: flex; flex-direction: column; position: fixed; height: 100vh; }
+  .logo { padding: 22px 18px 14px; border-bottom: 1px solid rgba(255,255,255,0.15); }
+  .logo h1 { font-family: var(--font-serif); font-size: 20px; color: white; }
+  .logo p { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 2px; letter-spacing: 0.4px; }
+  nav { flex: 1; padding: 10px 0; }
+  .nav-label { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.35); padding: 14px 18px 4px; }
+  .nav-item { display: flex; align-items: center; gap: 9px; padding: 10px 18px; cursor: pointer; font-size: 14px; color: rgba(255,255,255,0.72); transition: all 0.15s; border-left: 3px solid transparent; }
+  .nav-item:hover { background: rgba(255,255,255,0.08); color: white; }
+  .nav-item.active { background: rgba(255,255,255,0.13); color: white; border-left-color: var(--green-light); font-weight: 500; }
+  .nav-badge { background: var(--red); color: white; border-radius: 99px; font-size: 11px; padding: 1px 7px; font-weight: 600; margin-left: auto; }
+  .sidebar-foot { padding: 14px 18px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 11px; color: rgba(255,255,255,0.35); }
+
+  /* ── Main ── */
+  .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
+  .topbar { background: white; border-bottom: 1px solid var(--border); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .topbar h2 { font-family: var(--font-serif); font-size: 19px; }
+  .content { padding: 24px 28px; }
+
+  /* ── Pages ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── Stat cards ── */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+  .stat { background: white; border-radius: 10px; border: 1px solid var(--border); padding: 16px 18px; }
+  .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-muted); }
+  .stat-val { font-size: 26px; font-family: var(--font-serif); margin-top: 4px; }
+  .stat-sub { font-size: 12px; color: var(--gray-muted); margin-top: 3px; }
+  .stat.g { background: var(--green-pale); border-color: #9ecfb0; } .stat.g .stat-val { color: var(--green); }
+  .stat.a { background: var(--amber-pale); border-color: #f4b8a5; } .stat.a .stat-val { color: #b85c42; }
+  .stat.r { background: var(--red-pale); border-color: #e8aaaa; } .stat.r .stat-val { color: var(--red); }
+
+  /* ── Card ── */
+  .card { background: white; border-radius: 10px; border: 1px solid var(--border); padding: 18px 22px; margin-bottom: 18px; }
+  .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .card-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-muted); }
+
+  /* ── Table ── */
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; padding: 9px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--gray-muted); border-bottom: 1px solid var(--border); font-weight: 600; }
+  td { padding: 11px 12px; border-bottom: 1px solid #f2f2f2; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafafa; }
+
+  /* ── Tags ── */
+  .tag { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 12px; font-weight: 500; }
+  .tag.g { background: var(--green-pale); color: var(--green); }
+  .tag.a { background: var(--amber-pale); color: #b85c42; }
+  .tag.r { background: var(--red-pale); color: var(--red); }
+  .tag.b { background: #e3f2fd; color: #1565c0; }
+  .tag.gray { background: #f0f0f0; color: #555; }
+
+  /* ── Buttons ── */
+  .btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 16px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; font-family: var(--font-sans); transition: all 0.15s; }
+  .btn-p { background: var(--green); color: white; } .btn-p:hover { background: #1e4d39; }
+  .btn-s { background: white; color: var(--text); border: 1px solid var(--border); } .btn-s:hover { background: var(--gray-bg); }
+  .btn-d { background: var(--red-pale); color: var(--red); border: 1px solid #e8aaaa; }
+  .btn-sm { padding: 4px 11px; font-size: 12px; }
+
+  /* ── Forms ── */
+  .fg { margin-bottom: 14px; }
+  .fl { display: block; font-size: 13px; font-weight: 500; margin-bottom: 5px; }
+  .fc { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-size: 14px; font-family: var(--font-sans); color: var(--text); background: white; outline: none; }
+  .fc:focus { border-color: var(--green-light); box-shadow: 0 0 0 3px rgba(82,183,136,0.1); }
+  .fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  /* ── Alerts ── */
+  .alert { padding: 11px 15px; border-radius: 8px; font-size: 14px; margin-bottom: 14px; }
+  .alert.ok { background: var(--green-pale); color: var(--green); border: 1px solid #9ecfb0; }
+  .alert.warn { background: var(--amber-pale); color: #8b3a22; border: 1px solid #f4b8a5; }
+  .alert.err { background: var(--red-pale); color: var(--red); border: 1px solid #e8aaaa; }
+
+  /* ── Product grid ── */
+  .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+  .pcard { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.18s; }
+  .pcard:hover { border-color: var(--green-light); box-shadow: 0 3px 10px rgba(45,106,79,0.1); transform: translateY(-1px); }
+  .pcard.low { border-color: #f4b8a5; background: #fffaf8; }
+  .pcard.out { border-color: #e8aaaa; background: #fff5f5; }
+  .p-emoji { font-size: 30px; margin-bottom: 9px; }
+  .p-name { font-weight: 500; font-size: 14px; margin-bottom: 3px; }
+  .p-cat { font-size: 12px; color: var(--gray-muted); }
+  .p-price { font-size: 17px; font-weight: 600; color: var(--green); margin-top: 8px; }
+  .p-stock { font-size: 12px; margin-top: 4px; }
+
+  /* ── Purchase ── */
+  .purchase-wrap { max-width: 520px; }
+  .order-box { background: var(--green-pale); border-radius: 9px; padding: 15px 18px; margin-top: 14px; }
+  .o-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
+  .o-total { display: flex; justify-content: space-between; font-size: 17px; font-weight: 600; color: var(--green); border-top: 1px solid #9ecfb0; padding-top: 10px; margin-top: 8px; }
+
+  /* ── Bar chart ── */
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .bar-lbl { font-size: 13px; width: 140px; text-align: right; color: var(--gray-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { flex: 1; background: var(--gray-bg); border-radius: 99px; height: 20px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--green); border-radius: 99px; display: flex; align-items: center; justify-content: flex-end; padding-right: 7px; font-size: 11px; font-weight: 600; color: white; transition: width 0.5s ease; }
+  .bar-val { font-size: 13px; font-weight: 600; color: var(--green); width: 60px; }
+
+  /* ── Progress ── */
+  .prog { height: 5px; border-radius: 99px; background: #eee; overflow: hidden; margin-top: 3px; }
+  .prog-fill { height: 100%; border-radius: 99px; }
+
+  /* ── CSV ── */
+  .drop-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 30px; text-align: center; cursor: pointer; background: white; transition: all 0.2s; }
+  .drop-zone:hover, .drop-zone.drag { border-color: var(--green-light); background: var(--green-pale); }
+  .drop-zone p { color: var(--gray-muted); font-size: 13px; margin-top: 6px; }
+
+  /* ── Modal ── */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 200; display: none; align-items: center; justify-content: center; }
+  .modal-bg.show { display: flex; }
+  .modal { background: white; border-radius: 14px; padding: 24px; width: 460px; max-width: 95vw; box-shadow: 0 16px 48px rgba(0,0,0,0.14); }
+  .modal h3 { font-family: var(--font-serif); font-size: 19px; margin-bottom: 18px; }
+  .modal-foot { display: flex; justify-content: flex-end; gap: 9px; margin-top: 18px; }
+
+  /* ── Toast ── */
+  .toast { position: fixed; bottom: 20px; right: 20px; z-index: 999; background: #1b1b1b; color: white; padding: 11px 18px; border-radius: 9px; font-size: 13px; display: none; box-shadow: 0 6px 20px rgba(0,0,0,0.2); max-width: 320px; }
+  .toast.show { display: block; }
+
+  /* ── Low stock rows ── */
+  .row-low td { background: #fffaf8 !important; }
+  .row-crit td { background: var(--red-pale) !important; }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="logo">
+    <h1>🛒 FreshMart</h1>
+    <p>Store Management</p>
+  </div>
+  <nav>
+    <div class="nav-label">Shop</div>
+    <div class="nav-item active" onclick="go('products', this)">🏪 Product List</div>
+    <div class="nav-item" onclick="go('purchase', this)">🛍️ Purchase</div>
+    <div class="nav-label">Inventory</div>
+    <div class="nav-item" onclick="go('alerts', this)">⚠️ Low Stock <span class="nav-badge" id="low-badge">0</span></div>
+    <div class="nav-item" onclick="go('inventory', this)">📦 Inventory</div>
+    <div class="nav-label">Analytics</div>
+    <div class="nav-item" onclick="go('reports', this)">📊 Sales Report</div>
+    <div class="nav-label">Data</div>
+    <div class="nav-item" onclick="go('csv', this)">📁 CSV Import / Export</div>
+  </nav>
+  <div class="sidebar-foot">FreshMart · Local DB</div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <h2 id="page-title">Product List</h2>
+    <div style="font-size:13px;color:var(--gray-muted)">Admin</div>
+  </div>
+  <div class="content">
+
+    <!-- ════ PRODUCTS ════ -->
+    <div class="page active" id="page-products">
+      <div class="stats" id="stats-products"></div>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">All Products</div>
+          <div style="display:flex;gap:8px">
+            <select class="fc" style="width:130px;padding:6px 10px" id="cat-filter" onchange="renderProducts()">
+              <option value="">All Categories</option>
+            </select>
+            <button class="btn btn-p btn-sm" onclick="showModal('m-addprod')">+ Add Product</button>
+          </div>
+        </div>
+        <div class="pgrid" id="pgrid"></div>
+      </div>
+    </div>
+
+    <!-- ════ PURCHASE ════ -->
+    <div class="page" id="page-purchase">
+      <div class="card purchase-wrap">
+        <div class="card-title" style="margin-bottom:14px">New Purchase Order</div>
+        <div id="pur-alert"></div>
+        <div class="fg">
+          <label class="fl">Customer</label>
+          <select class="fc" id="pur-customer">
+            <option value="">— Walk-in (no loyalty points) —</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">Product</label>
+          <select class="fc" id="pur-product" onchange="calcOrder()">
+            <option value="">— Select a product —</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">Quantity</label>
+          <input type="number" class="fc" id="pur-qty" value="1" min="1" oninput="calcOrder()">
+        </div>
+        <div class="order-box" id="order-box" style="display:none">
+          <div class="o-row"><span>Product</span><span id="o-name">—</span></div>
+          <div class="o-row"><span>Unit Price</span><span id="o-price">—</span></div>
+          <div class="o-row"><span>Quantity</span><span id="o-qty">—</span></div>
+          <div class="o-row"><span>Loyalty Points Earned</span><span id="o-lp" style="color:var(--green)">—</span></div>
+          <div class="o-total"><span>Total</span><span id="o-total">—</span></div>
+        </div>
+        <div style="display:flex;gap:9px;margin-top:16px">
+          <button class="btn btn-p" style="flex:1" onclick="confirmPurchase()">Confirm Purchase</button>
+          <button class="btn btn-s" onclick="resetPurchase()">Reset</button>
+        </div>
+      </div>
+
+      <div class="card" style="max-width:520px">
+        <div class="card-title" style="margin-bottom:12px">Recent Transactions</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Product</th><th>Customer</th><th>Qty</th><th>Total</th><th>Date</th></tr></thead>
+            <tbody id="tx-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ ALERTS ════ -->
+    <div class="page" id="page-alerts">
+      <div id="alert-banner" class="alert warn" style="margin-bottom:18px"></div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px">Products Below Reorder Threshold</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Product</th><th>Category</th><th>Current Stock</th><th>Threshold</th><th>Stock Level</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="low-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px">All Products — Stock Overview</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Product</th><th>Stock</th><th>Threshold</th><th>Health Bar</th></tr></thead>
+            <tbody id="all-stock-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ INVENTORY ════ -->
+    <div class="page" id="page-inventory">
+      <div style="display:flex;gap:9px;margin-bottom:18px">
+        <input type="text" class="fc" placeholder="Search products..." id="inv-search" oninput="renderInventory()" style="flex:1">
+        <button class="btn btn-p" onclick="showModal('m-restock')">+ Update Stock</button>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px">Inventory Records (inventory table)</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Inventory ID</th><th>Product</th><th>Category</th><th>Price</th><th>Quantity</th><th>Threshold</th><th>Status</th></tr></thead>
+            <tbody id="inv-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ REPORTS ════ -->
+    <div class="page" id="page-reports">
+      <div class="stats" style="grid-template-columns:repeat(3,1fr);margin-bottom:22px" id="stats-reports"></div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px">Top 5 Best-Selling Products (by quantity sold)</div>
+        <div id="chart-top"></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px">Revenue per Product (Price × Quantity)</div>
+        <div id="chart-rev"></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px">Products Never Sold in Last 30 Days</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Current Stock</th></tr></thead>
+            <tbody id="never-sold"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ CSV ════ -->
+    <div class="page" id="page-csv">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:10px">Import Inventory from CSV</div>
+        <div class="alert" style="background:#e3f2fd;color:#1565c0;border:1px solid #90caf9;margin-bottom:12px">
+          Expected columns: <code>product_name, category_name, product_price, inventory_quantity, inventory_threshold</code>
+        </div>
+        <div class="drop-zone" id="drop-zone"
+          onclick="document.getElementById('csv-in').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="dropFile(event)">
+          <div style="font-size:36px">📂</div>
+          <strong>Drop CSV file here or click to browse</strong>
+          <p>.csv files only</p>
+        </div>
+        <input type="file" id="csv-in" accept=".csv" style="display:none" onchange="readCSV(event)">
+        <div id="csv-preview" style="display:none;margin-top:16px">
+          <div class="card-title" style="margin-bottom:8px">Preview (first 5 rows)</div>
+          <div class="tbl-wrap"><table id="preview-table"></table></div>
+          <div style="display:flex;gap:9px;margin-top:12px">
+            <button class="btn btn-p" onclick="doImport()">✓ Import</button>
+            <button class="btn btn-s" onclick="cancelImport()">Cancel</button>
+          </div>
+        </div>
+        <div id="import-msg"></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:10px">Export to CSV</div>
+        <p style="font-size:14px;color:var(--gray-muted);margin-bottom:14px">Download current data as a CSV file.</p>
+        <div style="display:flex;gap:9px">
+          <button class="btn btn-p" onclick="exportInventory()">⬇ Export Inventory</button>
+          <button class="btn btn-s" onclick="exportTransactions()">⬇ Export Transactions</button>
+          <button class="btn btn-s" onclick="exportCustomers()">⬇ Export Customers</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Modal: Add Product -->
+<div class="modal-bg" id="m-addprod">
+  <div class="modal">
+    <h3>Add New Product</h3>
+    <div class="fgrid">
+      <div class="fg"><label class="fl">Product Name</label><input class="fc" id="np-name" placeholder="e.g. Tomato Bunch"></div>
+      <div class="fg"><label class="fl">Price (₹)</label><input class="fc" id="np-price" type="number" placeholder="0.00" min="0.01" step="0.01"></div>
+      <div class="fg"><label class="fl">Category</label><select class="fc" id="np-cat"></select></div>
+      <div class="fg"><label class="fl">Supplier</label><select class="fc" id="np-sup"></select></div>
+      <div class="fg"><label class="fl">Initial Stock</label><input class="fc" id="np-stock" type="number" value="0" min="0"></div>
+      <div class="fg"><label class="fl">Reorder Threshold</label><input class="fc" id="np-thresh" type="number" value="10" min="0"></div>
+    </div>
+    <div class="fg"><label class="fl">Description (optional)</label><input class="fc" id="np-desc" placeholder="Short description"></div>
+    <div class="modal-foot">
+      <button class="btn btn-s" onclick="closeModal('m-addprod')">Cancel</button>
+      <button class="btn btn-p" onclick="addProduct()">Add Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Restock -->
+<div class="modal-bg" id="m-restock">
+  <div class="modal">
+    <h3>Update Stock</h3>
+    <div class="fg"><label class="fl">Product</label><select class="fc" id="rs-product"></select></div>
+    <div class="fg"><label class="fl">Add Quantity</label><input class="fc" id="rs-qty" type="number" value="20" min="1"></div>
+    <div class="modal-foot">
+      <button class="btn btn-s" onclick="closeModal('m-restock')">Cancel</button>
+      <button class="btn btn-p" onclick="doRestock()">Update</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Restock from alert -->
+<div class="modal-bg" id="m-restock2">
+  <div class="modal">
+    <h3>Restock Product</h3>
+    <div class="fg"><label class="fl">Product</label><input class="fc" id="rs2-name" readonly></div>
+    <input type="hidden" id="rs2-id">
+    <div class="fg"><label class="fl">Add Quantity</label><input class="fc" id="rs2-qty" type="number" value="50" min="1"></div>
+    <div class="modal-foot">
+      <button class="btn btn-s" onclick="closeModal('m-restock2')">Cancel</button>
+      <button class="btn btn-p" onclick="doRestock2()">Restock</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA (matches your database.sql exactly) ──────────────────────────────
+
+const categories = [
+  { category_id: 1, category_name: 'Grains' },
+  { category_id: 2, category_name: 'Dairy' },
+  { category_id: 3, category_name: 'Fruits' },
+  { category_id: 4, category_name: 'Vegetables' },
+];
+
+const suppliers = [
+  { supplier_id: 1, supplier_name: 'GreenHarvest Co',     supplier_email: 'greenharvest@supplymail.com',  supplier_contact: '1116543210' },
+  { supplier_id: 2, supplier_name: 'DairyPure Farms',     supplier_email: 'dairypure@supplymail.com',     supplier_contact: '1113456780' },
+  { supplier_id: 3, supplier_name: 'GoldenGrain Traders', supplier_email: 'goldengrain@supplymail.com',   supplier_contact: '1118776655' },
+  { supplier_id: 4, supplier_name: 'SnackSphere Ltd',     supplier_email: 'snacksphere@supplymail.com',   supplier_contact: '1119776655' },
+  { supplier_id: 5, supplier_name: 'BreadSphere Ltd',     supplier_email: 'breadsphere@supplymail.com',   supplier_contact: '1119779955' },
+  { supplier_id: 6, supplier_name: 'FruitHouse',          supplier_email: 'fruithouse@supplymail.com',    supplier_contact: '1111434567' },
+];
+
+// Products (after ALTER TABLE adds supplier_id and product_description)
+let products = [
+  { product_id: 1, product_name: 'Rice Bag',               product_price: 1500.00, category_id: 1, supplier_id: 3, product_description: 'Premium quality rice bag' },
+  { product_id: 2, product_name: 'Buffalo Milk 1L',        product_price: 80.00,   category_id: 2, supplier_id: 2, product_description: 'Fresh buffalo milk' },
+  { product_id: 3, product_name: 'Wheat Flour 1kg',        product_price: 120.00,  category_id: 1, supplier_id: 3, product_description: 'Fine wheat flour' },
+  { product_id: 4, product_name: 'Cheese Block 500g',      product_price: 250.00,  category_id: 2, supplier_id: 2, product_description: 'Aged cheese block' },
+  { product_id: 5, product_name: 'Apple',                  product_price: 70.00,   category_id: 3, supplier_id: 6, product_description: 'Fresh red apples' },
+  { product_id: 6, product_name: 'Banana Bunch',           product_price: 50.00,   category_id: 3, supplier_id: 6, product_description: 'Ripe banana bunch' },
+  { product_id: 7, product_name: 'Carrot Bunch',           product_price: 40.00,   category_id: 4, supplier_id: 1, product_description: 'Fresh carrots' },
+  { product_id: 8, product_name: 'Organic Spinach Bunch',  product_price: 60.00,   category_id: 4, supplier_id: 1, product_description: 'Organic spinach' },
+];
+
+// Inventory (inventory_id matches insert order)
+let inventory = [
+  { inventory_id: 1, inventory_product_id: 1, inventory_threshold: 10, inventory_quantity: 25 },
+  { inventory_id: 2, inventory_product_id: 2, inventory_threshold: 25, inventory_quantity: 50 },
+  { inventory_id: 3, inventory_product_id: 7, inventory_threshold: 15, inventory_quantity: 40 },
+  { inventory_id: 4, inventory_product_id: 3, inventory_threshold: 20, inventory_quantity: 100 },
+  { inventory_id: 5, inventory_product_id: 4, inventory_threshold: 10, inventory_quantity: 30 },
+  { inventory_id: 6, inventory_product_id: 5, inventory_threshold: 50, inventory_quantity: 200 },
+  { inventory_id: 7, inventory_product_id: 6, inventory_threshold: 30, inventory_quantity: 150 },
+  { inventory_id: 8, inventory_product_id: 8, inventory_threshold: 5,  inventory_quantity: 12 },
+];
+
+let customers = [
+  { customer_id: 1, customer_name: 'Nomlu Arahar',  customer_phone: '9000055555', customer_loyalty_points: 95 },
+  { customer_id: 2, customer_name: 'Bokul Binit',   customer_phone: '9070060000', customer_loyalty_points: 120 },
+  { customer_id: 3, customer_name: 'Kiri Osdan',    customer_phone: '9000066666', customer_loyalty_points: 410 },
+  { customer_id: 4, customer_name: 'Raupal Binit',  customer_phone: '9000070090', customer_loyalty_points: 0 },
+  { customer_id: 5, customer_name: 'Saubal Hut',    customer_phone: '9000077777', customer_loyalty_points: 0 },
+  { customer_id: 6, customer_name: 'Yeul Hut',      customer_phone: '9000085000', customer_loyalty_points: 0 },
+  { customer_id: 7, customer_name: 'Mokoro Market', customer_phone: '9090080000', customer_loyalty_points: 200 },
+  { customer_id: 8, customer_name: 'Getset Kopje',  customer_phone: '9000088888', customer_loyalty_points: 150 },
+];
+
+let transactions = [
+  { transaction_id: 1, transaction_product_id: 1, transaction_customer_id: 1, transaction_date: '2026-05-10', transaction_quantity: 1 },
+  { transaction_id: 2, transaction_product_id: 3, transaction_customer_id: 2, transaction_date: '2026-05-11', transaction_quantity: 2 },
+  { transaction_id: 3, transaction_product_id: 2, transaction_customer_id: 3, transaction_date: '2026-05-11', transaction_quantity: 1 },
+  { transaction_id: 4, transaction_product_id: 7, transaction_customer_id: 4, transaction_date: '2026-05-12', transaction_quantity: 1 },
+  { transaction_id: 5, transaction_product_id: 4, transaction_customer_id: 7, transaction_date: '2026-05-12', transaction_quantity: 1 },
+  { transaction_id: 6, transaction_product_id: 5, transaction_customer_id: 8, transaction_date: '2026-05-13', transaction_quantity: 10 },
+  { transaction_id: 7, transaction_product_id: 6, transaction_customer_id: 5, transaction_date: '2026-05-13', transaction_quantity: 5 },
+  { transaction_id: 8, transaction_product_id: 8, transaction_customer_id: 1, transaction_date: '2026-05-13', transaction_quantity: 1 },
+];
+
+let nextTxId = 9;
+let nextProdId = 9;
+
+// ── HELPERS ───────────────────────────────────────────────────────────────
+
+const catName = id => categories.find(c => c.category_id === id)?.category_name || '—';
+const supName = id => suppliers.find(s => s.supplier_id === id)?.supplier_name || '—';
+const custName = id => customers.find(c => c.customer_id === id)?.customer_name || 'Walk-in';
+const prodById = id => products.find(p => p.product_id === id);
+const invByProd = pid => inventory.find(i => i.inventory_product_id === pid);
+
+const emoji = { Grains: '🌾', Dairy: '🥛', Fruits: '🍎', Vegetables: '🥦' };
+const getEmoji = cat => emoji[cat] || '📦';
+
+function stockStatus(qty, thresh) {
+  if (qty === 0)        return { label: 'Out of Stock', cls: 'r' };
+  if (qty < thresh)     return { label: 'Low Stock',    cls: 'a' };
+  return                       { label: 'In Stock',     cls: 'g' };
+}
+
+function lowCount() {
+  return inventory.filter(i => i.inventory_quantity < i.inventory_threshold).length;
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────
+
+const titles = { products: 'Product List', purchase: 'Purchase', alerts: 'Low Stock Alerts', inventory: 'Inventory', reports: 'Sales Report', csv: 'CSV Import / Export' };
+
+function go(page, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('page-title').textContent = titles[page];
+  if (page === 'products')  renderProducts();
+  if (page === 'purchase')  renderPurchasePage();
+  if (page === 'alerts')    renderAlerts();
+  if (page === 'inventory') renderInventory();
+  if (page === 'reports')   renderReports();
+}
+
+// ── PRODUCTS ──────────────────────────────────────────────────────────────
+
+function renderProducts() {
+  // Populate category filter dropdown
+  const cf = document.getElementById('cat-filter');
+  if (cf.options.length === 1) {
+    categories.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.category_id; o.textContent = c.category_name;
+      cf.appendChild(o);
+    });
+  }
+  const catFilter = parseInt(cf.value) || 0;
+  let list = catFilter ? products.filter(p => p.category_id === catFilter) : [...products];
+
+  // Stats
+  const low = inventory.filter(i => i.inventory_quantity < i.inventory_threshold).length;
+  const out = inventory.filter(i => i.inventory_quantity === 0).length;
+  document.getElementById('stats-products').innerHTML = `
+    <div class="stat g"><div class="stat-label">Total Products</div><div class="stat-val">${products.length}</div><div class="stat-sub">across ${categories.length} categories</div></div>
+    <div class="stat"><div class="stat-label">In Stock</div><div class="stat-val">${inventory.filter(i=>i.inventory_quantity>=i.inventory_threshold).length}</div><div class="stat-sub">above threshold</div></div>
+    <div class="stat a"><div class="stat-label">Low Stock</div><div class="stat-val">${low}</div><div class="stat-sub">below threshold</div></div>
+    <div class="stat r"><div class="stat-label">Out of Stock</div><div class="stat-val">${out}</div><div class="stat-sub">needs restock</div></div>`;
+  document.getElementById('low-badge').textContent = low;
+
+  document.getElementById('pgrid').innerHTML = list.map(p => {
+    const inv = invByProd(p.product_id);
+    const qty = inv ? inv.inventory_quantity : 0;
+    const thresh = inv ? inv.inventory_threshold : 0;
+    const s = stockStatus(qty, thresh);
+    const cat = catName(p.category_id);
+    const cardCls = qty === 0 ? 'out' : qty < thresh ? 'low' : '';
+    return `<div class="pcard ${cardCls}" onclick="buyThis(${p.product_id})">
+      <div class="p-emoji">${getEmoji(cat)}</div>
+      <div class="p-name">${p.product_name}</div>
+      <div class="p-cat">${cat} · ${supName(p.supplier_id)}</div>
+      <div class="p-price">₹${p.product_price.toFixed(2)}</div>
+      <div class="p-stock"><span class="tag ${s.cls}">${s.label}</span> <span style="color:var(--gray-muted)">${qty} units</span></div>
+    </div>`;
+  }).join('');
+}
+
+function buyThis(pid) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.nav-item')[1].classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-purchase').classList.add('active');
+  document.getElementById('page-title').textContent = 'Purchase';
+  renderPurchasePage();
+  setTimeout(() => { document.getElementById('pur-product').value = pid; calcOrder(); }, 30);
+}
+
+// ── PURCHASE ──────────────────────────────────────────────────────────────
+
+function renderPurchasePage() {
+  // Customer dropdown
+  const cs = document.getElementById('pur-customer');
+  cs.innerHTML = '<option value="">— Walk-in (no loyalty points) —</option>' +
+    customers.map(c => `<option value="${c.customer_id}">${c.customer_name} (LP: ${c.customer_loyalty_points})</option>`).join('');
+
+  // Product dropdown
+  const ps = document.getElementById('pur-product');
+  ps.innerHTML = '<option value="">— Select a product —</option>' +
+    products.map(p => {
+      const inv = invByProd(p.product_id);
+      const qty = inv ? inv.inventory_quantity : 0;
+      return `<option value="${p.product_id}">${p.product_name} — ₹${p.product_price} (${qty} in stock)</option>`;
+    }).join('');
+
+  // Restock modal dropdown
+  document.getElementById('rs-product').innerHTML = products.map(p =>
+    `<option value="${p.product_id}">${p.product_name}</option>`).join('');
+
+  renderTransactions();
+}
+
+function calcOrder() {
+  const pid = parseInt(document.getElementById('pur-product').value);
+  const qty = parseInt(document.getElementById('pur-qty').value) || 1;
+  const box = document.getElementById('order-box');
+  if (!pid) { box.style.display = 'none'; return; }
+  const p = prodById(pid);
+  if (!p) return;
+  const total = p.product_price * qty;
+  const lp = Math.floor(total / 10); // 1 loyalty point per ₹10
+  box.style.display = 'block';
+  document.getElementById('o-name').textContent  = p.product_name;
+  document.getElementById('o-price').textContent = '₹' + p.product_price.toFixed(2);
+  document.getElementById('o-qty').textContent   = qty;
+  document.getElementById('o-lp').textContent    = '+' + lp + ' pts';
+  document.getElementById('o-total').textContent = '₹' + total.toFixed(2);
+}
+
+function confirmPurchase() {
+  const pid = parseInt(document.getElementById('pur-product').value);
+  const qty = parseInt(document.getElementById('pur-qty').value) || 1;
+  const cid = parseInt(document.getElementById('pur-customer').value) || null;
+  const alertDiv = document.getElementById('pur-alert');
+
+  if (!pid) { alertDiv.innerHTML = '<div class="alert warn">Please select a product.</div>'; return; }
+  const p = prodById(pid);
+  const inv = invByProd(pid);
+  if (!inv || inv.inventory_quantity < qty) {
+    alertDiv.innerHTML = `<div class="alert err">⚠️ Not enough stock. Only ${inv?.inventory_quantity || 0} units available.</div>`;
+    return;
+  }
+
+  // Record transaction (simulates INSERT INTO transactions)
+  const today = new Date().toISOString().split('T')[0];
+  transactions.unshift({ transaction_id: nextTxId++, transaction_product_id: pid, transaction_customer_id: cid, transaction_date: today, transaction_quantity: qty });
+
+  // TRIGGER: auto-decrement inventory
+  inv.inventory_quantity -= qty;
+
+  // Loyalty points update
+  if (cid) {
+    const lp = Math.floor(p.product_price * qty / 10);
+    const cust = customers.find(c => c.customer_id === cid);
+    if (cust) cust.customer_loyalty_points += lp;
+  }
+
+  // Check if now below threshold (TRIGGER: raise warning)
+  const belowThresh = inv.inventory_quantity < inv.inventory_threshold;
+  alertDiv.innerHTML = `<div class="alert ok">✓ Transaction recorded! ₹${(p.product_price * qty).toFixed(2)} — inventory updated automatically.${belowThresh ? '<br>⚠️ Stock now below threshold!' : ''}</div>`;
+  document.getElementById('order-box').style.display = 'none';
+  document.getElementById('pur-product').value = '';
+  document.getElementById('pur-qty').value = 1;
+  renderTransactions();
+  document.getElementById('low-badge').textContent = lowCount();
+  toast(belowThresh ? `⚠️ Low stock alert: ${p.product_name}` : `✓ Purchase recorded`);
+}
+
+function resetPurchase() {
+  document.getElementById('pur-product').value = '';
+  document.getElementById('pur-qty').value = 1;
+  document.getElementById('order-box').style.display = 'none';
+  document.getElementById('pur-alert').innerHTML = '';
+}
+
+function renderTransactions() {
+  document.getElementById('tx-body').innerHTML = transactions.slice(0, 10).map(t => {
+    const p = prodById(t.transaction_product_id);
+    const total = p ? (p.product_price * t.transaction_quantity).toFixed(2) : '—';
+    return `<tr>
+      <td>#${t.transaction_id}</td>
+      <td>${p ? p.product_name : '—'}</td>
+      <td>${custName(t.transaction_customer_id)}</td>
+      <td>${t.transaction_quantity}</td>
+      <td>₹${total}</td>
+      <td>${t.transaction_date}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── ALERTS ────────────────────────────────────────────────────────────────
+
+function renderAlerts() {
+  const low = inventory.filter(i => i.inventory_quantity < i.inventory_threshold);
+  const cnt = low.length;
+  document.getElementById('alert-banner').className = 'alert ' + (cnt ? 'warn' : 'ok');
+  document.getElementById('alert-banner').innerHTML = cnt
+    ? `⚠️ <strong>${cnt} product${cnt>1?'s':''}</strong> below reorder threshold.`
+    : '✓ All products are above their reorder threshold.';
+  document.getElementById('low-badge').textContent = cnt;
+
+  document.getElementById('low-body').innerHTML = cnt === 0
+    ? '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray-muted)">No low stock items 🎉</td></tr>'
+    : low.map(i => {
+      const p = prodById(i.inventory_product_id);
+      const pct = Math.round((i.inventory_quantity / i.inventory_threshold) * 100);
+      const crit = i.inventory_quantity <= Math.floor(i.inventory_threshold / 2);
+      const cat = p ? catName(p.category_id) : '—';
+      return `<tr class="${crit ? 'row-crit' : 'row-low'}">
+        <td>${p ? p.product_name : '—'}</td>
+        <td><span class="tag gray">${cat}</span></td>
+        <td><strong style="color:var(--red)">${i.inventory_quantity}</strong></td>
+        <td>${i.inventory_threshold}</td>
+        <td style="min-width:90px">
+          <div class="prog"><div class="prog-fill" style="width:${Math.min(pct,100)}%;background:${crit?'var(--red)':'var(--amber)'}"></div></div>
+          <span style="font-size:11px;color:var(--gray-muted)">${pct}% of threshold</span>
+        </td>
+        <td><span class="tag ${crit?'r':'a'}">${crit?'Critical':'Low'}</span></td>
+        <td><button class="btn btn-p btn-sm" onclick="openRestock2(${i.inventory_product_id})">Restock</button></td>
+      </tr>`;
+    }).join('');
+
+  document.getElementById('all-stock-body').innerHTML = inventory.map(i => {
+    const p = prodById(i.inventory_product_id);
+    const s = stockStatus(i.inventory_quantity, i.inventory_threshold);
+    const pct = Math.min(Math.round((i.inventory_quantity / Math.max(i.inventory_threshold * 2, 1)) * 100), 100);
+    const fillColor = s.cls === 'g' ? 'var(--green-light)' : s.cls === 'a' ? 'var(--amber)' : 'var(--red)';
+    return `<tr>
+      <td>${p ? p.product_name : '—'}</td>
+      <td>${i.inventory_quantity}</td>
+      <td>${i.inventory_threshold}</td>
+      <td style="min-width:120px">
+        <div class="prog"><div class="prog-fill" style="width:${pct}%;background:${fillColor}"></div></div>
+        <span class="tag ${s.cls}" style="font-size:11px;margin-top:3px;display:inline-block">${s.label}</span>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openRestock2(pid) {
+  const p = prodById(pid);
+  document.getElementById('rs2-id').value = pid;
+  document.getElementById('rs2-name').value = p ? p.product_name : '';
+  showModal('m-restock2');
+}
+
+function doRestock2() {
+  const pid = parseInt(document.getElementById('rs2-id').value);
+  const qty = parseInt(document.getElementById('rs2-qty').value) || 0;
+  const inv = invByProd(pid);
+  if (inv) inv.inventory_quantity += qty;
+  closeModal('m-restock2');
+  renderAlerts();
+  toast(`✓ Restocked successfully`);
+}
+
+// ── INVENTORY ─────────────────────────────────────────────────────────────
+
+function renderInventory() {
+  const q = (document.getElementById('inv-search').value || '').toLowerCase();
+  document.getElementById('inv-body').innerHTML = inventory
+    .filter(i => {
+      const p = prodById(i.inventory_product_id);
+      return !q || (p && p.product_name.toLowerCase().includes(q));
+    })
+    .map(i => {
+      const p = prodById(i.inventory_product_id);
+      const s = stockStatus(i.inventory_quantity, i.inventory_threshold);
+      return `<tr>
+        <td>#${i.inventory_id}</td>
+        <td>${p ? p.product_name : '—'}</td>
+        <td><span class="tag gray">${p ? catName(p.category_id) : '—'}</span></td>
+        <td>₹${p ? p.product_price.toFixed(2) : '—'}</td>
+        <td><strong>${i.inventory_quantity}</strong></td>
+        <td>${i.inventory_threshold}</td>
+        <td><span class="tag ${s.cls}">${s.label}</span></td>
+      </tr>`;
+    }).join('');
+}
+
+function doRestock() {
+  const pid = parseInt(document.getElementById('rs-product').value);
+  const qty = parseInt(document.getElementById('rs-qty').value) || 0;
+  const inv = invByProd(pid);
+  if (inv) inv.inventory_quantity += qty;
+  closeModal('m-restock');
+  renderInventory();
+  toast('✓ Stock updated');
+}
+
+// ── REPORTS ───────────────────────────────────────────────────────────────
+
+function renderReports() {
+  // Total revenue = SUM(product_price × transaction_quantity)
+  let totalRev = 0;
+  transactions.forEach(t => {
+    const p = prodById(t.transaction_product_id);
+    if (p) totalRev += p.product_price * t.transaction_quantity;
+  });
+
+  document.getElementById('stats-reports').innerHTML = `
+    <div class="stat g"><div class="stat-label">Total Revenue</div><div class="stat-val">₹${totalRev.toFixed(0)}</div><div class="stat-sub">all transactions</div></div>
+    <div class="stat"><div class="stat-label">Total Transactions</div><div class="stat-val">${transactions.length}</div><div class="stat-sub">recorded orders</div></div>
+    <div class="stat"><div class="stat-label">Avg Order Value</div><div class="stat-val">₹${(totalRev / Math.max(transactions.length,1)).toFixed(0)}</div><div class="stat-sub">per transaction</div></div>`;
+
+  // Top 5 by quantity sold
+  const soldQty = {};
+  const soldRev = {};
+  transactions.forEach(t => {
+    const p = prodById(t.transaction_product_id);
+    if (!p) return;
+    soldQty[p.product_name] = (soldQty[p.product_name] || 0) + t.transaction_quantity;
+    soldRev[p.product_name] = (soldRev[p.product_name] || 0) + p.product_price * t.transaction_quantity;
+  });
+
+  const top5 = Object.entries(soldQty).sort((a,b) => b[1]-a[1]).slice(0,5);
+  const maxQ = top5[0]?.[1] || 1;
+  document.getElementById('chart-top').innerHTML = top5.length === 0
+    ? '<p style="color:var(--gray-muted);font-size:14px">No transactions yet.</p>'
+    : top5.map(([name, qty]) => `<div class="bar-row">
+        <div class="bar-lbl">${name}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(qty/maxQ*100)}%">${qty}</div></div>
+        <div class="bar-val">${qty} sold</div>
+      </div>`).join('');
+
+  // Revenue per product
+  const revList = Object.entries(soldRev).sort((a,b) => b[1]-a[1]);
+  const maxR = revList[0]?.[1] || 1;
+  document.getElementById('chart-rev').innerHTML = revList.length === 0
+    ? '<p style="color:var(--gray-muted);font-size:14px">No revenue yet.</p>'
+    : revList.map(([name, rev]) => `<div class="bar-row">
+        <div class="bar-lbl">${name}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(rev/maxR*100)}%;background:var(--amber)">₹${rev.toFixed(0)}</div></div>
+        <div class="bar-val" style="color:var(--amber)">₹${rev.toFixed(0)}</div>
+      </div>`).join('');
+
+  // Never sold in last 30 days
+  const thirtyAgo = new Date(); thirtyAgo.setDate(thirtyAgo.getDate() - 30);
+  const recentPids = new Set(
+    transactions
+      .filter(t => new Date(t.transaction_date) >= thirtyAgo)
+      .map(t => t.transaction_product_id)
+  );
+  const neverSold = products.filter(p => !recentPids.has(p.product_id));
+  document.getElementById('never-sold').innerHTML = neverSold.length === 0
+    ? '<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--gray-muted)">All products sold recently!</td></tr>'
+    : neverSold.map(p => {
+      const inv = invByProd(p.product_id);
+      return `<tr><td>${p.product_name}</td><td><span class="tag gray">${catName(p.category_id)}</span></td><td>₹${p.product_price.toFixed(2)}</td><td>${inv ? inv.inventory_quantity : '—'}</td></tr>`;
+    }).join('');
+}
+
+// ── ADD PRODUCT ───────────────────────────────────────────────────────────
+
+function addProduct() {
+  const name  = document.getElementById('np-name').value.trim();
+  const price = parseFloat(document.getElementById('np-price').value);
+  const catId = parseInt(document.getElementById('np-cat').value);
+  const supId = parseInt(document.getElementById('np-sup').value);
+  const stock = parseInt(document.getElementById('np-stock').value) || 0;
+  const thresh= parseInt(document.getElementById('np-thresh').value) || 10;
+  const desc  = document.getElementById('np-desc').value.trim();
+  if (!name || !price || !catId) { toast('Fill in name, price and category'); return; }
+  const newProd = { product_id: nextProdId, product_name: name, product_price: price, category_id: catId, supplier_id: supId || null, product_description: desc };
+  products.push(newProd);
+  // Stored procedure: auto-create inventory record with zero/given stock
+  inventory.push({ inventory_id: inventory.length + 1, inventory_product_id: nextProdId, inventory_threshold: thresh, inventory_quantity: stock });
+  nextProdId++;
+  closeModal('m-addprod');
+  renderProducts();
+  toast(`✓ ${name} added. Inventory record created automatically.`);
+}
+
+// ── CSV ───────────────────────────────────────────────────────────────────
+
+let csvRows = null;
+
+function dropFile(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag');
+  processFile(e.dataTransfer.files[0]);
+}
+function readCSV(e) { processFile(e.target.files[0]); }
+
+function processFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.trim().split('\n');
+    const headers = lines[0].split(',').map(h => h.trim());
+    csvRows = lines.slice(1).map(l => {
+      const vals = l.split(',').map(v => v.trim());
+      const obj = {}; headers.forEach((h,i) => obj[h] = vals[i]);
+      return obj;
+    });
+    const preview = csvRows.slice(0,5);
+    document.getElementById('preview-table').innerHTML =
+      `<thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+       <tbody>${preview.map(r=>`<tr>${headers.map(h=>`<td>${r[h]||''}</td>`).join('')}</tr>`).join('')}</tbody>`;
+    document.getElementById('csv-preview').style.display = 'block';
+  };
+  reader.readAsText(file);
+}
+
+function doImport() {
+  if (!csvRows) return;
+  let count = 0;
+  csvRows.forEach(row => {
+    const name = row.product_name || row.Name;
+    const price = parseFloat(row.product_price || row.Price) || 0;
+    const qty = parseInt(row.inventory_quantity || row.Quantity) || 0;
+    const thresh = parseInt(row.inventory_threshold || row.Threshold) || 10;
+    const catName_ = row.category_name || row.Category || 'Grains';
+    const cat = categories.find(c => c.category_name === catName_);
+    if (name && price > 0) {
+      products.push({ product_id: nextProdId, product_name: name, product_price: price, category_id: cat?.category_id || 1, supplier_id: null, product_description: '' });
+      inventory.push({ inventory_id: inventory.length+1, inventory_product_id: nextProdId, inventory_threshold: thresh, inventory_quantity: qty });
+      nextProdId++; count++;
+    }
+  });
+  document.getElementById('import-msg').innerHTML = `<div class="alert ok" style="margin-top:12px">✓ Imported ${count} products successfully.</div>`;
+  document.getElementById('csv-preview').style.display = 'none';
+  csvRows = null;
+  toast(`✓ ${count} products imported`);
+}
+
+function cancelImport() { document.getElementById('csv-preview').style.display = 'none'; csvRows = null; }
+
+function exportInventory() {
+  const rows = inventory.map(i => {
+    const p = prodById(i.inventory_product_id);
+    return [i.inventory_id, i.inventory_product_id, p?.product_name||'', p?.product_price||'', i.inventory_quantity, i.inventory_threshold].join(',');
+  });
+  dl(['inventory_id,inventory_product_id,product_name,product_price,inventory_quantity,inventory_threshold', ...rows].join('\n'), 'freshmart_inventory.csv');
+  toast('✓ Inventory exported');
+}
+
+function exportTransactions() {
+  const rows = transactions.map(t => {
+    const p = prodById(t.transaction_product_id);
+    const total = p ? (p.product_price * t.transaction_quantity).toFixed(2) : '';
+    return [t.transaction_id, t.transaction_product_id, t.transaction_customer_id, t.transaction_date, t.transaction_quantity, total].join(',');
+  });
+  dl(['transaction_id,transaction_product_id,transaction_customer_id,transaction_date,transaction_quantity,total'].concat(rows).join('\n'), 'freshmart_transactions.csv');
+  toast('✓ Transactions exported');
+}
+
+function exportCustomers() {
+  const rows = customers.map(c => [c.customer_id, c.customer_name, c.customer_phone, c.customer_loyalty_points].join(','));
+  dl(['customer_id,customer_name,customer_phone,customer_loyalty_points', ...rows].join('\n'), 'freshmart_customers.csv');
+  toast('✓ Customers exported');
+}
+
+function dl(content, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: 'text/csv' }));
+  a.download = name; a.click();
+}
+
+// ── MODALS ────────────────────────────────────────────────────────────────
+
+function showModal(id) {
+  // Populate dropdowns fresh each time
+  if (id === 'm-addprod') {
+    document.getElementById('np-cat').innerHTML = categories.map(c => `<option value="${c.category_id}">${c.category_name}</option>`).join('');
+    document.getElementById('np-sup').innerHTML = suppliers.map(s => `<option value="${s.supplier_id}">${s.supplier_name}</option>`).join('');
+  }
+  document.getElementById(id).classList.add('show');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if (e.target===m) m.classList.remove('show'); }));
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+
+renderProducts();
+</script>
+</body>
+</html>
